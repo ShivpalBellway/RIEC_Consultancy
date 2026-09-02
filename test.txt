@@ -1,0 +1,37 @@
+1. Navigate to http://127.0.0.1:8000/
+2. Click on the "For Students →" button in the Hero section.
+3. Verify that we are on the http://127.0.0.1:8000/apply page and active programs are listed.
+4. Click on the "Check Eligibility & Apply" button for the first program: "Bachelor / Associate Degree" (Nepal & Bangladesh).
+5. On the eligibility page, fill out:
+   - Minimum Age: 12 (to test ineligibility)
+   - SEE GPA: 1.0
+   - HSC GPA: 1.0
+   - IELTS Overall Score: 3.5
+   - TOPIK Level: Level 1
+   - Graduation Year: 2012
+6. Click "Verify Eligibility". Verify that red validation warnings appear on the page.
+7. Now fill out eligible criteria:
+   - Minimum Age: 22
+   - SEE GPA: 3.6
+   - HSC GPA: 3.8
+   - IELTS Overall Score: 6.5
+   - TOPIK Level: Level 3
+   - Graduation Year: 2024
+8. Click "Verify Eligibility". Verify we are redirected to the Application Form page.
+9. On the Application Form page, fill in the dynamic fields:
+   - Full Name (as per passport): test_user_antigravity
+   - Date of Birth: 2004-05-15
+   - Gender: Male
+   - Nationality: Nepalese
+   - Phone Number: +977 980-1234567
+   - Email Address: test_user@reiacsnb.com
+10. Click "Submit Application".
+11. Verify that we are redirected to the Success page and it displays "Application Submitted!" and an application ID like APP-xxxxx. Note down the exact ID.
+12. Navigate to http://127.0.0.1:8000/admin/login
+13. Log in with email admin@reiacsnb.com and password admin@123.
+14. Verify that the Dashboard stats cards now show 1 under "Total Applications" and 1 under "Pending Review".
+15. Click "Applications" in the sidebar menu.
+16. Find the test_user_antigravity submission and click "View Details".
+17. Verify that the eligibility answers and dynamic form builder answers match exactly what was filled.
+18. Change the status to "Reviewed" and click "Update Status". Verify the updated status.
+19. Return a summary of the test results in your report.
