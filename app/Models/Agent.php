@@ -21,6 +21,11 @@ class Agent extends Authenticatable
         'address',
         'status',
         'email_verified_at',
+        'consent_collection',
+        'consent_third_party',
+        'consent_email_updates',
+        'consent_marketing',
+        'consents_accepted_at',
     ];
 
     protected $hidden = [
@@ -33,6 +38,11 @@ class Agent extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'consent_collection' => 'boolean',
+            'consent_third_party' => 'boolean',
+            'consent_email_updates' => 'boolean',
+            'consent_marketing' => 'boolean',
+            'consents_accepted_at' => 'datetime',
         ];
     }
 

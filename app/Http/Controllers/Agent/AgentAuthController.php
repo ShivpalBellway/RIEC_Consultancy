@@ -30,6 +30,10 @@ class AgentAuthController extends Controller
             'phone'        => ['nullable', 'string', 'max:50'],
             'country'      => ['nullable', 'string', 'max:100'],
             'address'      => ['nullable', 'string'],
+            'consent_collection' => ['required', 'accepted'],
+            'consent_third_party' => ['required', 'accepted'],
+            'consent_email_updates' => ['nullable', 'boolean'],
+            'consent_marketing' => ['nullable', 'boolean'],
         ]);
 
         $agent = Agent::create([
@@ -41,6 +45,11 @@ class AgentAuthController extends Controller
             'country'     => $data['country'] ?? null,
             'address'     => $data['address'] ?? null,
             'status'      => 'pending', // Requires admin approval
+            'consent_collection' => true,
+            'consent_third_party' => true,
+            'consent_email_updates' => $request->boolean('consent_email_updates'),
+            'consent_marketing' => $request->boolean('consent_marketing'),
+            'consents_accepted_at' => now(),
         ]);
 
         // Notify Admin of new agent registration

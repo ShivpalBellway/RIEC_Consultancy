@@ -123,6 +123,31 @@
                     </div>
                 </div>
 
+                <div class="pt-4 border-t border-slate-700/60 space-y-3">
+                    <h3 class="text-sm font-bold text-white"><i class="fa-solid fa-shield-halved text-gold mr-2"></i>Applicant Consent</h3>
+                    <p class="text-xs text-slate-400">Please read and agree before submitting your agency registration.</p>
+                    <label class="flex items-start gap-3 p-3 rounded-xl bg-gold/10 border border-gold/30 cursor-pointer">
+                        <input type="checkbox" id="agentAgreeAll" class="mt-0.5 h-4 w-4" >
+                        <span class="text-xs text-gold font-bold">Agree to All</span>
+                    </label>
+                    <label class="flex items-start gap-3 p-3 rounded-xl bg-slate-900/60 border border-slate-700 cursor-pointer">
+                        <input type="checkbox" name="consent_collection" value="1" required class="agent-consent mt-0.5 h-4 w-4">
+                        <span class="text-xs text-slate-200"><strong class="text-rose-400">[Required]</strong> Consent to the Collection and Processing of Personal Information <button type="button" class="agent-details text-gold font-bold ml-1">[View Details]</button><small class="agent-detail-text hidden block mt-2 text-slate-400">Your details may be collected and used for agency verification, partnership management, student application support, and related consultancy services.</small></span>
+                    </label>
+                    <label class="flex items-start gap-3 p-3 rounded-xl bg-slate-900/60 border border-slate-700 cursor-pointer">
+                        <input type="checkbox" name="consent_third_party" value="1" required class="agent-consent mt-0.5 h-4 w-4">
+                        <span class="text-xs text-slate-200"><strong class="text-rose-400">[Required]</strong> Consent to the Provision of Personal Information to Third Parties <button type="button" class="agent-details text-gold font-bold ml-1">[View Details]</button><small class="agent-detail-text hidden block mt-2 text-slate-400">Information may be shared where necessary with partner institutions, authorities, and service providers for legitimate application and partnership processing.</small></span>
+                    </label>
+                    <label class="flex items-start gap-3 p-3 rounded-xl bg-slate-900/40 border border-slate-700 cursor-pointer">
+                        <input type="checkbox" name="consent_email_updates" value="1" class="agent-consent mt-0.5 h-4 w-4">
+                        <span class="text-xs text-slate-300"><strong class="text-slate-500">[Optional]</strong> Consent to Receive Application and Partnership Updates by Email</span>
+                    </label>
+                    <label class="flex items-start gap-3 p-3 rounded-xl bg-slate-900/40 border border-slate-700 cursor-pointer">
+                        <input type="checkbox" name="consent_marketing" value="1" class="agent-consent mt-0.5 h-4 w-4">
+                        <span class="text-xs text-slate-300"><strong class="text-slate-500">[Optional]</strong> Consent to Receive Marketing and Promotional Information</span>
+                    </label>
+                </div>
+
                 <button type="submit" class="w-full mt-4 py-3 bg-gold hover:bg-amber-500 text-slate-900 font-bold rounded-xl transition-all shadow-lg shadow-gold/20 flex items-center justify-center gap-2 text-sm">
                     <span>Submit Agency Registration</span>
                     <i class="fa-solid fa-paper-plane"></i>
@@ -139,4 +164,20 @@
     </div>
 
 </body>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const agreeAll = document.getElementById('agentAgreeAll');
+    const consents = document.querySelectorAll('.agent-consent');
+    agreeAll.addEventListener('change', () => consents.forEach((checkbox) => checkbox.checked = agreeAll.checked));
+    consents.forEach((checkbox) => checkbox.addEventListener('change', () => {
+        agreeAll.checked = Array.from(consents).every((item) => item.checked);
+    }));
+    document.querySelectorAll('.agent-details').forEach((button) => button.addEventListener('click', (event) => {
+        event.preventDefault();
+        const detail = button.parentElement.querySelector('.agent-detail-text');
+        detail.classList.toggle('hidden');
+        button.textContent = detail.classList.contains('hidden') ? '[View Details]' : '[Hide Details]';
+    }));
+});
+</script>
 </html>
