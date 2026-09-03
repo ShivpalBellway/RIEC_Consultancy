@@ -13,7 +13,7 @@
             'type'        => $d->document_type,
             'type_name'   => $d->document_type_name,
             'name'        => $d->document_name,
-            'url'         => \Illuminate\Support\Facades\Storage::url($d->file_path),
+            'url'         => \Illuminate\Support\Facades\Storage::disk('public')->url($d->file_path),
             'uploaded_at' => $d->created_at->format('d M Y, h:i A'),
             'status'      => $d->status,            // pending / verified / rejected
             'admin_comment' => $d->admin_comment,
@@ -22,7 +22,7 @@
     }
 
     $mandatoryKeys            = array_keys($mandatoryTypes);
-    $uploadedMandatoryCount   = count(array_intersect($mandatoryKeys, array_keys($uploadedDocsMap)));
+    $uploadedMandatoryCount   = count(array_filter($mandatoryKeys, fn ($key) => isset($uploadedDocsMap[$key]) && $uploadedDocsMap[$key]['status'] !== 'rejected'));
     $totalMandatoryCount      = count($mandatoryKeys);
 
     // Phase definitions (matches admin status values)
@@ -50,11 +50,20 @@
     removalModalOpen: false,
     selectedDocId: null,
     selectedDocName: '',
+    phaseAlert: '',
+
+    showPhaseAlert(message) {
+        this.phaseAlert = message;
+        setTimeout(() => { this.phaseAlert = ''; }, 5000);
+    },
 
     /* ── Docs state (reactive) ── */
     uploadedDocs: {{ json_encode($uploadedDocsMap) }},
     uploadingType: null,
+    batchUploading: false,
+    submittingReview: false,
     uploadSuccessMsg: '',
+    uploadErrorMsg: '',
     uploadedCount: {{ $uploadedMandatoryCount }},
     totalCount: {{ $totalMandatoryCount }},
 
@@ -64,11 +73,12 @@
 
     async uploadRowFile(type, fileInput) {
         if (!fileInput.files || !fileInput.files[0]) {
-            alert('Please choose a file to upload first.');
+            this.uploadErrorMsg = 'Please choose a file to upload first.';
             return;
         }
         this.uploadingType   = type;
         this.uploadSuccessMsg = '';
+        this.uploadErrorMsg = '';
         const formData = new FormData();
         formData.append('_token', '{{ csrf_token() }}');
         formData.append('document_type', type);
@@ -87,16 +97,65 @@
                 this.uploadSuccessMsg    = data.message;
                 setTimeout(() => { this.uploadSuccessMsg = ''; }, 4000);
             } else {
-                alert(data.message || 'Upload failed.');
+                this.uploadErrorMsg = data.message || 'Upload failed.';
             }
         } catch (e) {
             console.error(e);
-            alert('An error occurred. Please try again.');
+            this.uploadErrorMsg = 'Upload failed. Please try again.';
         } finally {
             this.uploadingType = null;
         }
     }
+    ,async uploadSelectedFiles() {
+        const formData = new FormData();
+        let selectedCount = 0;
+        document.querySelectorAll('[data-batch-file]').forEach((input) => {
+            if (input.files && input.files[0]) {
+                formData.append('files[' + input.dataset.batchFile + ']', input.files[0]);
+                selectedCount++;
+            }
+        });
+
+        if (!selectedCount) {
+            this.uploadErrorMsg = 'Please choose at least one document first.';
+            return;
+        }
+
+        this.batchUploading = true;
+        this.uploadErrorMsg = '';
+        this.uploadSuccessMsg = '';
+        formData.append('_token', '{{ csrf_token() }}');
+        try {
+            const res = await fetch('{{ route('agent.documents.upload-batch', $student) }}', {
+                method: 'POST',
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                body: formData
+            });
+            const data = await res.json();
+            if (data.success) {
+                this.uploadSuccessMsg = data.message;
+                setTimeout(() => window.location.reload(), 700);
+            } else {
+                this.uploadErrorMsg = data.message || 'Upload failed.';
+            }
+        } catch (e) {
+            console.error(e);
+            this.uploadErrorMsg = 'Upload failed. Please try again.';
+        } finally {
+            this.batchUploading = false;
+        }
+    }
 }" class="space-y-6">
+
+    <div x-show="phaseAlert" x-transition x-cloak
+         class="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-sm font-semibold shadow-sm"
+         role="status">
+        <i class="fa-solid fa-lock text-amber-600 mt-0.5"></i>
+        <span x-text="phaseAlert"></span>
+        <button type="button" @click="phaseAlert = ''" class="ml-auto text-amber-600 hover:text-amber-800" aria-label="Dismiss notification">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
 
     {{-- ══════════════════════════════════════════════════════
      |  PAGE HEADER: Student info + Action Buttons
@@ -146,7 +205,7 @@
                 @if(!$isLocked)
                     @click="activeTab = '{{ $phaseKey }}'"
                 @else
-                    @click="alert('🔒 Phase Locked: Admin has not progressed the application to {{ $phaseInfo['label'] }} phase yet.')"
+                    @click="showPhaseAlert('Admin has not progressed the application to {{ $phaseInfo['label'] }} phase yet.')"
                 @endif
                 :class="activeTab === '{{ $phaseKey }}'
                     ? '{{ $isCurr ? 'border-b-2 border-gold text-primary-700 bg-white font-extrabold shadow-sm' : 'border-b-2 border-primary-400 text-primary-700 bg-white font-bold' }}'
@@ -301,16 +360,9 @@
                             </button>
                         </template>
 
-                        {{-- If uploaded & pending → Show pending badge + request removal (not verified) --}}
-                        <template x-if="uploadedDocs['{{ $typeKey }}'] && uploadedDocs['{{ $typeKey }}'].status === 'pending'">
-                            <div class="flex items-center gap-1.5">
-                                <span class="px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold">Pending Review</span>
-                                <button
-                                    @click="selectedDocId = uploadedDocs['{{ $typeKey }}'].id; selectedDocName = '{{ $typeName }}'; removalModalOpen = true"
-                                    class="text-[11px] text-rose-500 hover:text-rose-700 font-semibold hover:underline">
-                                    Remove?
-                                </button>
-                            </div>
+                        {{-- If uploaded & pending → Show pending badge only --}}
+                        <template x-if="uploadedDocs['{{ $typeKey }}'] && ['pending', 'uploaded'].includes(uploadedDocs['{{ $typeKey }}'].status)">
+                            <span class="px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold">Pending Review</span>
                         </template>
                     </div>
                 </div>
@@ -524,7 +576,7 @@
                                 </div>
                                 <div>
                                     <div class="font-bold text-gray-900 text-sm">{{ $doc->document_type_name }}</div>
-                                    <a href="{{ \Illuminate\Support\Facades\Storage::url($doc->file_path) }}" target="_blank"
+                                    <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($doc->file_path) }}" target="_blank"
                                        class="text-xs text-primary-600 hover:underline flex items-center gap-1 mt-0.5">
                                         <i class="fa-solid fa-download text-[10px]"></i> {{ $doc->document_name }}
                                     </a>
@@ -599,9 +651,9 @@
      |══════════════════════════════════════════════════════ --}}
     <div x-show="uploadModalOpen"
          class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
-         x-cloak>
-        <div @click.away="uploadModalOpen = false"
-             class="bg-white w-full max-w-3xl rounded-2xl shadow-2xl border border-gray-100 overflow-hidden flex flex-col max-h-[90vh]">
+         x-cloak
+         @click.away="if(uploadedCount >= totalCount) { uploadModalOpen = false; }">
+         <div class="bg-white w-full max-w-3xl rounded-2xl shadow-2xl border border-gray-100 overflow-hidden flex flex-col max-h-[90vh]">
 
             {{-- Modal Header --}}
             <div class="bg-gradient-to-r from-primary-600 to-indigo-900 p-5 text-white flex items-center justify-between shrink-0">
@@ -611,7 +663,7 @@
                     </h3>
                     <p class="text-xs text-indigo-100 mt-0.5">Student: <strong class="text-white">{{ $student->full_name }}</strong></p>
                 </div>
-                <button @click="uploadModalOpen = false; window.location.reload()"
+                <button x-show="uploadedCount >= totalCount" @click="uploadModalOpen = false; window.location.reload()"
                         class="text-white/80 hover:text-white bg-white/10 hover:bg-white/20 w-8 h-8 rounded-full flex items-center justify-center">
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
@@ -625,6 +677,14 @@
                      class="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
                     <i class="fa-solid fa-circle-check text-emerald-600 text-base"></i>
                     <span x-text="uploadSuccessMsg"></span>
+                </div>
+                <div x-show="uploadErrorMsg" x-transition
+                     class="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-center gap-2">
+                    <i class="fa-solid fa-circle-exclamation text-rose-600 text-base"></i>
+                    <span x-text="uploadErrorMsg"></span>
+                    <button type="button" @click="uploadErrorMsg = ''" class="ml-auto text-rose-600" aria-label="Dismiss upload error">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
                 </div>
 
                 {{-- Progress --}}
@@ -662,7 +722,7 @@
                                     <template x-if="uploadedDocs['{{ $typeKey }}'] && uploadedDocs['{{ $typeKey }}'].status === 'rejected'">
                                         <i class="fa-solid fa-xmark"></i>
                                     </template>
-                                    <template x-if="uploadedDocs['{{ $typeKey }}'] && uploadedDocs['{{ $typeKey }}'].status === 'pending'">
+                                    <template x-if="uploadedDocs['{{ $typeKey }}'] && ['pending', 'uploaded'].includes(uploadedDocs['{{ $typeKey }}'].status)">
                                         <i class="fa-solid fa-clock"></i>
                                     </template>
                                     <template x-if="!uploadedDocs['{{ $typeKey }}']">
@@ -704,7 +764,7 @@
                                 {{-- REJECTED: force re-upload --}}
                                 <template x-if="uploadedDocs['{{ $typeKey }}'] && uploadedDocs['{{ $typeKey }}'].status === 'rejected'">
                                     <div class="flex items-center gap-2">
-                                        <input type="file" :id="'file_{{ $typeKey }}'" accept=".pdf,.jpg,.jpeg,.png"
+                                        <input type="file" data-batch-file="{{ $typeKey }}" :id="'file_{{ $typeKey }}'" accept=".pdf,.jpg,.jpeg,.png"
                                                class="text-xs text-gray-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-rose-50 file:text-rose-700">
                                         <button type="button"
                                             @click="uploadRowFile('{{ $typeKey }}', document.getElementById('file_{{ $typeKey }}'))"
@@ -720,39 +780,19 @@
                                     </div>
                                 </template>
 
-                                {{-- PENDING (uploaded but not verified): Replace option --}}
-                                <template x-if="uploadedDocs['{{ $typeKey }}'] && uploadedDocs['{{ $typeKey }}'].status === 'pending'">
-                                    <div class="flex items-center gap-2" x-data="{ reupload: false }">
-                                        <div x-show="!reupload" class="flex items-center gap-2">
-                                            <span class="px-3 py-1.5 rounded-full bg-blue-100 text-blue-800 font-bold text-xs flex items-center gap-1">
-                                                <i class="fa-solid fa-clock"></i> Pending Review
-                                            </span>
-                                            <button type="button" @click="reupload = true"
-                                                    class="px-3 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-xs font-semibold">Replace</button>
-                                        </div>
-                                        <div x-show="reupload" class="flex items-center gap-2">
-                                            <input type="file" :id="'file_{{ $typeKey }}'" accept=".pdf,.jpg,.jpeg,.png"
-                                                   class="text-xs text-gray-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-gray-200 file:text-gray-700">
-                                            <button type="button"
-                                                @click="uploadRowFile('{{ $typeKey }}', document.getElementById('file_{{ $typeKey }}'))"
-                                                :disabled="uploadingType === '{{ $typeKey }}'"
-                                                class="px-3.5 py-1.5 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-lg text-xs flex items-center gap-1">
-                                                <template x-if="uploadingType === '{{ $typeKey }}'">
-                                                    <i class="fa-solid fa-spinner animate-spin"></i>
-                                                </template>
-                                                <template x-if="uploadingType !== '{{ $typeKey }}'">
-                                                    <span>Upload</span>
-                                                </template>
-                                            </button>
-                                            <button type="button" @click="reupload = false" class="text-gray-400 hover:text-gray-600 text-xs">Cancel</button>
-                                        </div>
+                                {{-- PENDING (uploaded but not verified): Locked until admin review --}}
+                                <template x-if="uploadedDocs['{{ $typeKey }}'] && ['pending', 'uploaded'].includes(uploadedDocs['{{ $typeKey }}'].status)">
+                                    <div class="flex items-center gap-2">
+                                        <span class="px-3 py-1.5 rounded-full bg-blue-100 text-blue-800 font-bold text-xs flex items-center gap-1">
+                                            <i class="fa-solid fa-clock"></i> Pending Review
+                                        </span>
                                     </div>
                                 </template>
 
                                 {{-- NOT UPLOADED: Fresh upload --}}
                                 <template x-if="!uploadedDocs['{{ $typeKey }}']">
                                     <div class="flex items-center gap-2">
-                                        <input type="file" :id="'file_{{ $typeKey }}'" accept=".pdf,.jpg,.jpeg,.png"
+                                        <input type="file" data-batch-file="{{ $typeKey }}" :id="'file_{{ $typeKey }}'" accept=".pdf,.jpg,.jpeg,.png"
                                                class="text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100">
                                         <button type="button"
                                             @click="uploadRowFile('{{ $typeKey }}', document.getElementById('file_{{ $typeKey }}'))"
@@ -777,11 +817,32 @@
 
             {{-- Modal Footer --}}
             <div class="bg-gray-50 px-6 py-4 border-t border-gray-100 flex items-center justify-between shrink-0">
-                <span class="text-xs text-gray-500 font-medium">Modal stays open after each upload.</span>
-                <button type="button" @click="uploadModalOpen = false; window.location.reload()"
-                        class="px-5 py-2 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl text-xs shadow-sm flex items-center gap-1.5">
-                    <i class="fa-solid fa-check-double"></i> Done / Close Modal
-                </button>
+                <span class="text-xs text-gray-500 font-medium" x-text="uploadedCount < totalCount ? (totalCount - uploadedCount) + ' mandatory document(s) still missing' : 'All mandatory documents uploaded ✓'"></span>
+                <div class="flex items-center gap-3">
+                    <button type="button" @click="uploadSelectedFiles()" :disabled="batchUploading"
+                            class="px-5 py-2 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white font-bold rounded-xl text-xs shadow-sm flex items-center gap-1.5">
+                        <i class="fa-solid fa-layer-group"></i>
+                        <span x-text="batchUploading ? 'Uploading...' : 'Upload Selected Documents'"></span>
+                    </button>
+                    <span x-show="uploadedCount < totalCount" class="text-xs font-semibold text-rose-600">
+                        Upload all mandatory documents to continue
+                    </span>
+                    @if($student->status === 'submitted')
+                    <form action="{{ route('agent.documents.submit', $student) }}" method="POST" x-show="uploadedCount >= totalCount">
+                        @csrf
+                        <button type="submit" :disabled="uploadedCount < totalCount || submittingReview"
+                                @click="submittingReview = true"
+                                class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-xl text-xs shadow-sm flex items-center gap-1.5">
+                            <i class="fa-solid fa-paper-plane"></i> Submit for Admin Review
+                        </button>
+                    </form>
+                    @else
+                    <button type="button" @click="uploadModalOpen = false; window.location.reload()"
+                            class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-sm flex items-center gap-1.5">
+                        <i class="fa-solid fa-check-double"></i> Done
+                    </button>
+                    @endif
+                </div>
             </div>
         </div>
     </div>

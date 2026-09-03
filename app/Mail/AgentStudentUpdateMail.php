@@ -16,7 +16,7 @@ class AgentStudentUpdateMail extends Mailable
     public string $actionType;   // status_updated | document_verified | document_rejected | university_assigned
     public string $actionTitle;
     public string $studentName;
-    public string $message;
+    public string $body;
     public array  $details;
     public string $portalLink;
 
@@ -33,7 +33,7 @@ class AgentStudentUpdateMail extends Mailable
         $this->actionType  = $actionType;
         $this->actionTitle = $actionTitle;
         $this->studentName = $studentName;
-        $this->message     = $message;
+        $this->body        = $message;
         $this->portalLink  = $portalLink;
         $this->details     = $details;
     }
@@ -45,6 +45,8 @@ class AgentStudentUpdateMail extends Mailable
             'document_verified'    => '✅ Document Verified',
             'document_rejected'    => '❌ Document Review Required',
             'university_assigned'  => '🏛️ University Assigned',
+            'removal_approved'    => '✅ Document Removal Approved',
+            'removal_rejected'    => '❌ Document Removal Rejected',
         ];
 
         $prefix = $subjectPrefixes[$this->actionType] ?? '📩 Portal Update';

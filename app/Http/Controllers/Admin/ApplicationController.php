@@ -9,9 +9,11 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use App\Models\Application;
 use App\Models\Program;
+use App\Models\SiteSetting;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\ApplicationStatusMail;
+use App\Mail\AgentActivityAlertMail;
 
 class ApplicationController extends Controller
 {
@@ -306,6 +308,26 @@ class ApplicationController extends Controller
                 ' status changed from ' . $oldStatus . ' to ' . $newStatus .
                 ' - ' . $application->name
         );
+
+        // Notify the configured Admin recipient about every application update.
+        $adminEmail = SiteSetting::applicationRecipientEmail();
+        if ($adminEmail) {
+            try {
+                Mail::to($adminEmail)->send(new AgentActivityAlertMail(
+                    agentName: 'Admin',
+                    actionTitle: 'Application Updated',
+                    description: 'Application status was updated in the Admin portal.',
+                    details: [
+                        'Application ID' => 'APP-' . str_pad($application->id, 5, '0', STR_PAD_LEFT),
+                        'Applicant' => $application->name,
+                        'Previous Status' => $oldStatus,
+                        'New Status' => $statusLabels[$newStatus] ?? ucfirst($newStatus),
+                    ]
+                ));
+            } catch (\Exception $e) {
+                \Log::error('Admin application activity email failed: ' . $e->getMessage());
+            }
+        }
 
         // Send status email to student's login email — skip 'studying' status
         //  if ($newStatus !== 'studying' && !empty($application->email)) {

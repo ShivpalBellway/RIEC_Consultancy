@@ -14,6 +14,9 @@
             </h2>
             <p class="text-xs text-slate-500 mt-0.5">Manage students registered through agency partners and assign universities</p>
         </div>
+        <a href="{{ route('admin.students.create') }}" class="px-4 py-2.5 bg-primary text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition-colors inline-flex items-center gap-2">
+            <i class="fa-solid fa-user-plus"></i> Add Student
+        </a>
     </div>
 
     <!-- Filters -->
@@ -90,6 +93,10 @@
                         </td>
 
                         <td class="py-4 px-5 text-right">
+                            <a href="{{ route('admin.students.edit', $student) }}" class="px-3.5 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-200 transition-colors inline-flex items-center gap-1 mr-1">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                                <span>Edit</span>
+                            </a>
                             <a href="{{ route('admin.students.show', $student) }}" class="px-3.5 py-1.5 bg-primary text-white rounded-lg text-xs font-bold hover:bg-slate-800 transition-colors inline-flex items-center gap-1">
                                 <i class="fa-solid fa-sliders"></i>
                                 <span>Manage & Assign</span>

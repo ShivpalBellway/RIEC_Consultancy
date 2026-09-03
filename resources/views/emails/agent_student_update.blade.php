@@ -60,6 +60,8 @@
         .badge.document_verified   { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
         .badge.document_rejected   { background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; }
         .badge.university_assigned { background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe; }
+        .badge.removal_approved   { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+        .badge.removal_rejected   { background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; }
 
         /* Greeting */
         .greeting {
@@ -172,7 +174,7 @@
 
         <!-- Greeting -->
         <p class="greeting">Dear {{ $agentName }},</p>
-        <p class="msg-text">{{ $message }}</p>
+        <p class="msg-text">{{ $body }}</p>
 
         <!-- Details Table -->
         @if(!empty($details))
@@ -205,6 +207,14 @@
         @elseif($actionType === 'status_updated')
         <div class="alert-box warning">
             <strong>📋 Status Updated:</strong> Please log into your agent portal to view the complete details and any additional steps required for this phase.
+        </div>
+        @elseif($actionType === 'removal_approved')
+        <div class="alert-box success">
+            <strong>✅ Request Approved:</strong> The requested document has been removed from the student's record.
+        </div>
+        @elseif($actionType === 'removal_rejected')
+        <div class="alert-box warning">
+            <strong>⚠️ Request Rejected:</strong> The document remains in the student's record. Please review the admin comment in your portal.
         </div>
         @endif
 

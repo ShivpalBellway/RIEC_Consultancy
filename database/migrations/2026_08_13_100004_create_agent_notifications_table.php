@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('agent_notifications')) {
+            return;
+        }
+
         Schema::create('agent_notifications', function (Blueprint $table) {
             $table->id();
             $table->foreignId('agent_id')->nullable()->constrained('agents')->onDelete('cascade');

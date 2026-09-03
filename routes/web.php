@@ -124,7 +124,9 @@ Route::prefix('agent')->name('agent.')->group(function () {
         Route::resource('students', AgentStudentController::class);
 
         // Documents Upload & Removal Request
+        Route::post('/students/{student}/documents/upload-batch', [AgentDocumentController::class, 'uploadBatch'])->name('documents.upload-batch');
         Route::post('/students/{student}/documents/upload', [AgentDocumentController::class, 'upload'])->name('documents.upload');
+        Route::post('/students/{student}/documents/submit', [AgentDocumentController::class, 'submitForReview'])->name('documents.submit');
         Route::post('/documents/{document}/request-removal', [AgentDocumentController::class, 'requestRemoval'])->name('documents.request-removal');
     });
 });
@@ -164,9 +166,14 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Students Management (Admin)
         Route::prefix('students')->name('students.')->group(function () {
             Route::get('/', [\App\Http\Controllers\Admin\StudentController::class, 'index'])->name('index');
+            Route::get('/create', [\App\Http\Controllers\Admin\StudentController::class, 'create'])->name('create');
+            Route::post('/', [\App\Http\Controllers\Admin\StudentController::class, 'store'])->name('store');
+            Route::get('/{student}/edit', [\App\Http\Controllers\Admin\StudentController::class, 'edit'])->name('edit');
+            Route::put('/{student}', [\App\Http\Controllers\Admin\StudentController::class, 'update'])->name('update');
             Route::get('/{student}', [\App\Http\Controllers\Admin\StudentController::class, 'show'])->name('show');
             Route::put('/{student}/university', [\App\Http\Controllers\Admin\StudentController::class, 'updateUniversity'])->name('update-university');
             Route::put('/{student}/status', [\App\Http\Controllers\Admin\StudentController::class, 'updateStatus'])->name('update-status');
+            Route::post('/{student}/documents/upload', [\App\Http\Controllers\Admin\StudentController::class, 'uploadDocument'])->name('documents.upload');
             Route::post('/{student}/offer-letter', [\App\Http\Controllers\Admin\StudentController::class, 'uploadOfferLetter'])->name('upload-offer-letter');
             // Document Verify / Reject
             Route::post('/documents/{document}/verify', [\App\Http\Controllers\Admin\StudentController::class, 'verifyDocument'])->name('documents.verify');

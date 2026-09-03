@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Student;
 use App\Models\StudentDocument;
+use App\Models\Agent;
 use App\Models\AgentNotification;
 use App\Mail\AgentStudentUpdateMail;
 use App\Traits\LogsActivity;
@@ -26,6 +27,70 @@ class StudentController extends Controller
         'visa'                => 'Visa Phase',
         'completed'           => 'Completed / Enrolled',
     ];
+
+    public function create()
+    {
+        $agents = Agent::where('status', 'active')->orderBy('name')->get();
+
+        return view('pages.admin.students.create', compact('agents'));
+    }
+
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'agent_id'              => ['required', 'exists:agents,id'],
+            'first_name'            => ['required', 'string', 'max:100'],
+            'last_name'             => ['required', 'string', 'max:100'],
+            'email'                 => ['required', 'email', 'max:255'],
+            'phone'                 => ['nullable', 'string', 'max:50'],
+            'passport_number'       => ['nullable', 'string', 'max:100'],
+            'date_of_birth'         => ['nullable', 'date'],
+            'gender'                => ['nullable', 'string', 'max:20'],
+            'nationality'           => ['nullable', 'string', 'max:100'],
+            'korean_address'        => ['nullable', 'string'],
+            'korean_city'           => ['nullable', 'string', 'max:100'],
+            'korean_postal_code'    => ['nullable', 'string', 'max:30'],
+            'korean_contact_number' => ['nullable', 'string', 'max:50'],
+        ]);
+
+        $student = Student::create($data + ['status' => 'submitted']);
+        $this->log('create', 'students', "Admin created student {$student->full_name}");
+
+        return redirect()->route('admin.students.show', $student)
+            ->with('success', 'Student created successfully.');
+    }
+
+    public function edit(Student $student)
+    {
+        $agents = Agent::where('status', 'active')->orderBy('name')->get();
+
+        return view('pages.admin.students.edit', compact('student', 'agents'));
+    }
+
+    public function update(Request $request, Student $student)
+    {
+        $data = $request->validate([
+            'agent_id'              => ['required', 'exists:agents,id'],
+            'first_name'            => ['required', 'string', 'max:100'],
+            'last_name'             => ['required', 'string', 'max:100'],
+            'email'                 => ['required', 'email', 'max:255'],
+            'phone'                 => ['nullable', 'string', 'max:50'],
+            'passport_number'       => ['nullable', 'string', 'max:100'],
+            'date_of_birth'         => ['nullable', 'date'],
+            'gender'                => ['nullable', 'string', 'max:20'],
+            'nationality'           => ['nullable', 'string', 'max:100'],
+            'korean_address'        => ['nullable', 'string'],
+            'korean_city'           => ['nullable', 'string', 'max:100'],
+            'korean_postal_code'    => ['nullable', 'string', 'max:30'],
+            'korean_contact_number' => ['nullable', 'string', 'max:50'],
+        ]);
+
+        $student->update($data);
+        $this->log('update', 'students', "Admin updated student {$student->full_name}");
+
+        return redirect()->route('admin.students.show', $student)
+            ->with('success', 'Student details updated successfully.');
+    }
 
     /* ─────────────────────────────────────────────────────────────
      | INDEX
@@ -209,6 +274,10 @@ class StudentController extends Controller
             ]);
         }
 
+        if ($student->status === 'university_assigned') {
+            $student->update(['status' => 'offer_letter']);
+        }
+
         // Notify Agent
         if ($student->agent) {
             AgentNotification::create([
@@ -239,6 +308,75 @@ class StudentController extends Controller
         return back()
             ->with('active_tab', 'documents')
             ->with('success', "Official Offer Letter uploaded successfully.");
+    }
+
+    public function uploadDocument(Request $request, Student $student)
+    {
+        $documentTypes = StudentDocument::allDocumentTypes();
+        $request->validate([
+            'document_type' => ['required', 'in:' . implode(',', array_keys($documentTypes))],
+            'file' => ['required', 'file', 'mimes:pdf,doc,docx,jpg,jpeg,png', 'max:10240'],
+        ]);
+
+        $file = $request->file('file');
+        $documentType = $request->input('document_type');
+        $filePath = $file->store('student_documents/admin_uploads', 'public');
+        $existing = StudentDocument::where('student_id', $student->id)
+            ->where('document_type', $documentType)
+            ->first();
+
+        $data = [
+            'agent_id' => $student->agent_id,
+            'document_name' => $file->getClientOriginalName(),
+            'file_path' => $filePath,
+            'file_size' => $file->getSize(),
+            'mime_type' => $file->getClientMimeType(),
+            'is_mandatory' => array_key_exists($documentType, StudentDocument::mandatoryDocumentTypes()),
+            'status' => 'verified',
+            'admin_comment' => null,
+            'removal_request_status' => 'none',
+        ];
+
+        if ($existing) {
+            if ($existing->file_path) {
+                Storage::disk('public')->delete($existing->file_path);
+            }
+            $existing->update($data);
+            $document = $existing;
+        } else {
+            $document = StudentDocument::create($data + [
+                'student_id' => $student->id,
+                'document_type' => $documentType,
+            ]);
+        }
+
+        if ($student->agent) {
+            AgentNotification::create([
+                'agent_id' => $student->agent_id,
+                'type' => 'document_uploaded',
+                'title' => 'Document Uploaded by Admin',
+                'message' => "Admin uploaded '{$document->document_type_name}' for student {$student->full_name}.",
+                'link' => route('agent.students.show', $student->id),
+            ]);
+
+            $this->sendAgentEmail(
+                agent: $student->agent,
+                actionType: 'document_verified',
+                actionTitle: 'Document Uploaded by Admin',
+                studentName: $student->full_name,
+                message: "The REIAC Global Admin team uploaded '{$document->document_type_name}' for student {$student->full_name}. You can view it in your agent portal.",
+                portalLink: route('agent.students.show', $student->id),
+                details: [
+                    'Student Name' => $student->full_name,
+                    'Document Type' => $document->document_type_name,
+                    'Uploaded By' => 'REIAC Global Admin',
+                ]
+            );
+        }
+
+        $this->log('upload_document', 'students', "Admin uploaded {$document->document_type_name} for {$student->full_name}");
+
+        return back()->with('active_tab', 'documents')->with('success', "{$document->document_type_name} uploaded successfully.");
     }
 
     /* ─────────────────────────────────────────────────────────────

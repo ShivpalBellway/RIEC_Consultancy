@@ -178,6 +178,21 @@
          |  TAB 2: DOCUMENTS REVIEW
          |════════════════════════════════════════════ --}}
         <div x-show="activeTab === 'documents'" class="p-6 space-y-4">
+            <form action="{{ route('admin.students.documents.upload', $student) }}" method="POST" enctype="multipart/form-data" class="p-4 bg-indigo-50 border border-indigo-100 rounded-xl flex flex-col md:flex-row md:items-end gap-3">
+                @csrf
+                <div class="flex-1">
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Upload Document as Admin</label>
+                    <select name="document_type" required class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm">
+                        <option value="">Select document type</option>
+                        @foreach($mandatoryTypes as $typeKey => $typeName)
+                        <option value="{{ $typeKey }}">{{ $typeName }}</option>
+                        @endforeach
+                        <option value="offer_letter">Official Offer Letter</option>
+                    </select>
+                </div>
+                <input type="file" name="file" required accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" class="text-xs text-slate-600 bg-white border border-slate-200 rounded-lg p-1.5">
+                <button class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold"><i class="fa-solid fa-cloud-arrow-up mr-1"></i> Upload</button>
+            </form>
 
             <div class="flex items-center justify-between mb-2">
                 <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Mandatory Document Checklist — Admin Review</h3>
@@ -215,7 +230,7 @@
                                 <span class="ml-2 text-[11px] text-rose-500 font-semibold">* Mandatory</span>
                                 @if($doc)
                                 <div class="mt-0.5">
-                                    <a href="{{ \Illuminate\Support\Facades\Storage::url($doc->file_path) }}" target="_blank"
+                                    <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($doc->file_path) }}" target="_blank"
                                        class="text-xs text-primary hover:underline flex items-center gap-1">
                                         <i class="fa-solid fa-download text-[10px]"></i>
                                         {{ $doc->document_name }} — Uploaded {{ $doc->created_at->format('d M Y') }}
@@ -250,9 +265,7 @@
 
                                 {{-- Reject Button --}}
                                 <button type="button"
-                                    @click="rejectDocId = {{ $doc->id }}; rejectDocName = '{{ $typeName }}'; activeTab = 'documents'"
-                                    x-data
-                                    @click="$dispatch('open-reject-modal', { id: {{ $doc->id }}, name: '{{ $typeName }}' })"
+                                    @click="activeTab = 'documents'; $dispatch('open-reject-modal', { id: {{ $doc->id }}, name: '{{ $typeName }}' })"
                                     class="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg text-xs transition-colors flex items-center gap-1.5 shadow-sm">
                                     <i class="fa-solid fa-circle-xmark"></i> Reject
                                 </button>
@@ -288,7 +301,7 @@
                             <tr class="hover:bg-slate-50">
                                 <td class="px-4 py-3">
                                     <div class="font-bold text-slate-800">{{ $doc->document_type_name }}</div>
-                                    <a href="{{ \Illuminate\Support\Facades\Storage::url($doc->file_path) }}" target="_blank" class="text-xs text-primary hover:underline">Download</a>
+                                    <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($doc->file_path) }}" target="_blank" class="text-xs text-primary hover:underline">Download</a>
                                 </td>
                                 <td class="px-4 py-3">
                                     <span class="px-2.5 py-1 rounded-full text-xs font-bold
@@ -409,7 +422,7 @@
                         </div>
                     </div>
 
-                    <a href="{{ \Illuminate\Support\Facades\Storage::url($offerDoc->file_path) }}" target="_blank"
+                    <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($offerDoc->file_path) }}" target="_blank"
                        class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl text-xs transition-colors flex items-center gap-1.5 shadow-sm">
                         <i class="fa-solid fa-download"></i> View / Download
                     </a>

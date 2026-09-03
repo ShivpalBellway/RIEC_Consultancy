@@ -40,7 +40,7 @@
 
                         <td class="py-4 px-5">
                             <div class="font-bold text-slate-900 text-sm">{{ $req->document_type_name }}</div>
-                            <a href="{{ \Illuminate\Support\Facades\Storage::url($req->file_path) }}" target="_blank" class="text-xs text-primary hover:underline flex items-center gap-1 mt-0.5">
+                            <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($req->file_path) }}" target="_blank" class="text-xs text-primary hover:underline flex items-center gap-1 mt-0.5">
                                 <i class="fa-solid fa-download text-[10px]"></i>
                                 <span>{{ $req->document_name }}</span>
                             </a>
