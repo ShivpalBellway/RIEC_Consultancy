@@ -20,6 +20,7 @@ class Agent extends Authenticatable
         'country',
         'address',
         'status',
+        'suspension_reason',
         'email_verified_at',
         'consent_collection',
         'consent_third_party',

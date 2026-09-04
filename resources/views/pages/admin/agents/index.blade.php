@@ -113,13 +113,10 @@
                                 @endif
 
                                 @if($agent->status !== 'suspended')
-                                <form action="{{ route('admin.agents.update-status', $agent) }}" method="POST" class="inline">
-                                    @csrf
-                                    <input type="hidden" name="status" value="suspended">
-                                    <button type="submit" class="px-3 py-1.5 bg-slate-100 hover:bg-rose-100 text-slate-700 hover:text-rose-700 rounded-lg text-xs font-semibold transition-colors" onclick="return confirm('Suspend this agent?')">
-                                        <span>Suspend</span>
-                                    </button>
-                                </form>
+                                <button type="button" onclick="confirmSuspend({{ $agent->id }}, '{{ $agent->name }}')" class="px-3 py-1.5 bg-slate-100 hover:bg-rose-100 text-slate-700 hover:text-rose-700 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1">
+                                    <i class="fa-solid fa-ban"></i>
+                                    <span>Suspend</span>
+                                </button>
                                 @endif
                             </div>
                         </td>
@@ -143,5 +140,47 @@
         @endif
     </div>
 
+    {{-- Hidden suspension form --}}
+    <form id="suspendForm" method="POST" class="hidden">
+        @csrf
+        <input type="hidden" name="status" value="suspended">
+        <input type="hidden" name="suspension_reason" id="suspensionReasonInput">
+    </form>
+
+    <script>
+        function confirmSuspend(agentId, agentName) {
+            Swal.fire({
+                title: 'Suspend Agent?',
+                html: `You are about to suspend <strong>${agentName}</strong>.<br><br>Please provide a reason for suspension:`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: '<i class="fa-solid fa-ban"></i> Yes, Suspend',
+                cancelButtonText: 'Cancel',
+                input: 'textarea',
+                inputPlaceholder: 'Enter suspension reason here...',
+                inputAttributes: {
+                    'aria-label': 'Suspension reason'
+                },
+                inputValidator: (value) => {
+                    if (!value || value.trim().length < 3) {
+                        return 'Please enter a valid reason (minimum 3 characters)';
+                    }
+                },
+                customClass: {
+                    confirmButton: 'rounded-lg px-4 py-2.5 font-bold text-sm',
+                    cancelButton: 'rounded-lg px-4 py-2.5 font-semibold text-sm'
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const form = document.getElementById('suspendForm');
+                    form.action = "{{ url('admin/agents') }}/" + agentId + "/status";
+                    document.getElementById('suspensionReasonInput').value = result.value;
+                    form.submit();
+                }
+            });
+        }
+    </script>
 </div>
 @endsection

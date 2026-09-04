@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Agent;
 use App\Models\AgentNotification;
 use App\Mail\AgentAccountApprovedMail;
+use App\Mail\AgentSuspendedMail;
 use App\Traits\LogsActivity;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -43,6 +44,7 @@ class AdminAgentController extends Controller
     {
         $request->validate([
             'status' => ['required', 'in:pending,active,suspended'],
+            'suspension_reason' => ['nullable', 'string', 'max:1000'],
         ]);
 
         $oldStatus = $agent->status;
@@ -65,6 +67,29 @@ class AdminAgentController extends Controller
                 Mail::to($agent->email)->send(new AgentAccountApprovedMail($agent));
             } catch (\Exception $e) {
                 \Log::error('Failed to send agent approval email: ' . $e->getMessage());
+            }
+        }
+
+        if ($newStatus === 'suspended' && $oldStatus !== 'suspended') {
+            $reason = $request->input('suspension_reason', 'Your account has been suspended due to policy violation.');
+
+            // Save suspension reason
+            $agent->update(['suspension_reason' => $reason]);
+
+            // Notify Agent in-app
+            AgentNotification::create([
+                'agent_id' => $agent->id,
+                'type'     => 'account_suspended',
+                'title'    => 'Account Suspended',
+                'message'  => "Your agent account has been suspended. Reason: {$reason}",
+                'link'     => route('agent.dashboard'),
+            ]);
+
+            // Send suspension email to agent
+            try {
+                Mail::to($agent->email)->send(new AgentSuspendedMail($agent, $reason));
+            } catch (\Exception $e) {
+                \Log::error('Failed to send agent suspension email: ' . $e->getMessage());
             }
         }
 
