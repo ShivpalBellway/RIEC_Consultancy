@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Agent;
 use App\Models\AgentNotification;
+use App\Mail\AgentAccountApprovedMail;
 use App\Traits\LogsActivity;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 
 class AdminAgentController extends Controller
 {
@@ -57,6 +59,13 @@ class AdminAgentController extends Controller
                 'message'  => 'Your agent account has been approved by the Admin. You now have full access to the agent portal.',
                 'link'     => route('agent.dashboard'),
             ]);
+
+            // Send approval email to agent
+            try {
+                Mail::to($agent->email)->send(new AgentAccountApprovedMail($agent));
+            } catch (\Exception $e) {
+                \Log::error('Failed to send agent approval email: ' . $e->getMessage());
+            }
         }
 
         $this->log('update_status', 'agents', "Updated agent status for {$agent->name} from {$oldStatus} to {$newStatus}");
