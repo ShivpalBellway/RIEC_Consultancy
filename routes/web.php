@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\AdminAboutUsController;
 use App\Http\Controllers\Web\ContactPageController;
 use App\Http\Controllers\Web\FaqPageController;
 use App\Http\Controllers\Web\ServicePageController;
+use App\Http\Controllers\Web\LegalPageController;
 use App\Http\Controllers\Admin\ContactMessageController;
 use App\Http\Controllers\Admin\SiteSettingController;
 use App\Http\Controllers\Admin\PartnerController;
@@ -64,6 +65,10 @@ Route::get('/about-us', [AboutPageController::class, 'index'])->name('aboutUs');
 // Contact Us
 Route::get('/contact-us', [ContactPageController::class, 'index'])->name('contact');
 Route::post('/contact-us', [ContactPageController::class, 'store'])->name('contact.store');
+
+// Legal Pages
+Route::get('/privacy-policy', [LegalPageController::class, 'show'])->defaults('slug', 'privacy-policy')->name('privacy-policy');
+Route::get('/terms-conditions', [LegalPageController::class, 'show'])->defaults('slug', 'terms-conditions')->name('terms-conditions');
 
 // Visa Points Calculator
 Route::get('/visa-calculator', function () {
@@ -278,6 +283,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Contact Page Settings
         Route::get('/contact-settings', [ContactSettingController::class, 'edit'])->name('contact-settings.edit');
         Route::post('/contact-settings', [ContactSettingController::class, 'update'])->name('contact-settings.update');
+
+        // Privacy Policy and Terms & Conditions
+        Route::get('/legal-pages', [\App\Http\Controllers\Admin\LegalPageController::class, 'edit'])->name('legal-pages.edit');
+        Route::put('/legal-pages', [\App\Http\Controllers\Admin\LegalPageController::class, 'update'])->name('legal-pages.update');
 
         // Stats Section
         Route::get('/stats', [StatsController::class, 'edit'])->name('stats.edit');

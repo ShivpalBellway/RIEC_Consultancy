@@ -371,7 +371,8 @@
                 request()->routeIs('admin.site.manage') ||
                 request()->routeIs('admin.faqs.*') ||
                 request()->routeIs('admin.blogs.*')||
-                request()->routeIs('admin.about.*');
+                request()->routeIs('admin.about.*') ||
+                request()->routeIs('admin.legal-pages.*');
                 @endphp
 
                 <button id="website-manage-toggle" type="button" class="sidebar-link {{ $websiteOpen ? 'active' : '' }}" onclick="toggleWebsiteManage()">
@@ -409,6 +410,11 @@
                     <a href="{{ route('admin.contact-settings.edit') }}" class="sidebar-link {{ request()->routeIs('admin.contact-settings.*') ? 'active' : '' }}">
                         <i class="fa-solid fa-address-book"></i>
                         <span>Contact Settings</span>
+                    </a>
+
+                    <a href="{{ route('admin.legal-pages.edit') }}" class="sidebar-link {{ request()->routeIs('admin.legal-pages.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-scale-balanced"></i>
+                        <span>Privacy & Terms</span>
                     </a>
 
 

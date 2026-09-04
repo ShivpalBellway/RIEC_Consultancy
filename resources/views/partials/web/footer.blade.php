@@ -237,8 +237,8 @@
         </style>
 
         <div class="flex gap-4 text-gray-400">
-            <a href="#" class="hover:text-[#dca737] transition">Privacy Policy</a>
-            <a href="#" class="hover:text-[#dca737] transition">Terms & Conditions</a>
+            <a href="{{ route('privacy-policy') }}" class="hover:text-[#dca737] transition">Privacy Policy</a>
+            <a href="{{ route('terms-conditions') }}" class="hover:text-[#dca737] transition">Terms & Conditions</a>
         </div>
 
     </div>
