@@ -51,6 +51,11 @@
                     class="text-center border border-[#dca737] text-white px-7 sm:px-8 py-4 rounded-md font-bold hover:bg-white hover:text-[#061d43] transition">
                     {{ $heroBtn2Text }} →
                 </a>
+                <a href="{{ route('agent.login') }}"
+                    class="text-center bg-white text-[#061d43] hover:bg-[#dca737] px-7 sm:px-8 py-4 rounded-md font-bold transition shadow-lg inline-flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-handshake-angle"></i>
+                    Become an Agent
+                </a>
             </div>
 
         </div>

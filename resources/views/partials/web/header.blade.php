@@ -313,30 +313,36 @@ $normalClass = 'hover:text-gold border-b-2 border-transparent pb-1.5 transition-
             </nav>
 
             {{-- Right Side CTA --}}
-            <div class="hidden lg:flex items-center gap-4">
+            <div class="hidden lg:flex items-center gap-2">
 
                 @auth
                 <a href="{{ route('student.dashboard') }}"
-                    class="inline-flex items-center gap-2 border border-primary/20 text-primary px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-primary hover:text-white transition-all duration-300">
+                    class="inline-flex items-center gap-1.5 border border-primary/20 text-primary px-3 py-2 rounded-lg text-xs font-semibold hover:bg-primary hover:text-white transition-all duration-300">
                     <i class="fa-solid fa-gauge-high text-xs"></i>
                     Dashboard
                 </a>
                 <form action="{{ route('student.logout') }}" method="POST">
                     @csrf
                     <button type="submit"
-                        class="inline-flex items-center gap-2 bg-gold text-white px-4 py-2.5 rounded-lg text-sm font-semibold shadow hover:bg-yellow-600 hover:-translate-y-0.5 transition-all duration-300">
+                        class="inline-flex items-center gap-1.5 bg-gold text-white px-3 py-2 rounded-lg text-xs font-semibold shadow hover:bg-yellow-600 hover:-translate-y-0.5 transition-all duration-300">
                         Logout
                     </button>
                 </form>
                 @else
                 <a href="{{ route('student.login') }}"
-                    class="inline-flex items-center gap-2 border border-primary/20 text-primary px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-primary hover:text-white transition-all duration-300">
+                    class="inline-flex items-center gap-1.5 border border-primary/20 text-primary px-3 py-2 rounded-lg text-xs font-semibold hover:bg-primary hover:text-white transition-all duration-300">
+                    <i class="fa-solid fa-arrow-right-to-bracket text-[10px]"></i>
                     Login
                 </a>
                 <a href="{{ route('student.register') }}"
-                    class="inline-flex items-center gap-2 bg-gold text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow hover:bg-yellow-600 hover:-translate-y-0.5 transition-all duration-300">
+                    class="inline-flex items-center gap-1.5 bg-gold text-white px-3.5 py-2 rounded-lg text-xs font-semibold shadow hover:bg-yellow-600 hover:-translate-y-0.5 transition-all duration-300">
                     Register
-                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                    <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                </a>
+                <a href="{{ route('agent.login') }}"
+                    class="inline-flex items-center gap-1.5 bg-primary text-white px-3 py-2 rounded-lg text-xs font-semibold shadow hover:bg-gold hover:-translate-y-0.5 transition-all duration-300">
+                    <i class="fa-solid fa-handshake-angle text-[10px]"></i>
+                    Agent
                 </a>
                 @endauth
 
@@ -439,6 +445,11 @@ $normalClass = 'hover:text-gold border-b-2 border-transparent pb-1.5 transition-
                         Register
                     </a>
                 </div>
+                <a href="{{ route('agent.login') }}"
+                    class="mt-2 block w-full text-center bg-primary text-white px-4 py-3 rounded-lg font-semibold hover:bg-gold transition inline-flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-handshake-angle"></i>
+                    Become an Agent
+                </a>
                 @endauth
             </div>
 
